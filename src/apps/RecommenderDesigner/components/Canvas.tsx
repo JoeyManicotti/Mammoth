@@ -1,4 +1,4 @@
-import { useRef, useCallback } from 'react'
+import { useRef, useCallback, useState } from 'react'
 import { useDrop } from 'react-dnd'
 import CanvasComponent from './CanvasComponent'
 import ConnectionLine from './ConnectionLine'
@@ -9,6 +9,10 @@ interface CanvasProps {
   components: ComponentData[]
   connections: Connection[]
   selectedComponent: string | null
+  zoom: number
+  pan: { x: number; y: number }
+  onZoomChange: (zoom: number) => void
+  onPanChange: (pan: { x: number; y: number }) => void
   onAddComponent: (component: ComponentData) => void
   onUpdateComponent: (id: string, updates: Partial<ComponentData>) => void
   onRemoveComponent: (id: string) => void
@@ -21,6 +25,10 @@ const Canvas = ({
   components,
   connections,
   selectedComponent,
+  zoom,
+  pan,
+  onZoomChange,
+  onPanChange,
   onAddComponent,
   onUpdateComponent,
   onRemoveComponent,
@@ -29,6 +37,8 @@ const Canvas = ({
   onRemoveConnection
 }: CanvasProps) => {
   const componentCounter = useRef(0)
+  const [isPanning, setIsPanning] = useState(false)
+  const [panStart, setPanStart] = useState({ x: 0, y: 0 })
 
   const [{ isOver }, drop] = useDrop(() => ({
     accept: 'component',
@@ -62,10 +72,38 @@ const Canvas = ({
   }), [onAddComponent])
 
   const handleCanvasClick = useCallback((e: React.MouseEvent) => {
-    if (e.target === e.currentTarget) {
+    if (e.target === e.currentTarget || (e.target as HTMLElement).classList.contains('canvas-content')) {
       onSelectComponent(null)
     }
   }, [onSelectComponent])
+
+  const handleWheel = useCallback((e: React.WheelEvent) => {
+    e.preventDefault()
+    const delta = e.deltaY > 0 ? -0.1 : 0.1
+    const newZoom = Math.max(0.3, Math.min(3, zoom + delta))
+    onZoomChange(newZoom)
+  }, [zoom, onZoomChange])
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    if (e.button === 1 || (e.button === 0 && e.shiftKey)) { // Middle click or Shift + Left click
+      e.preventDefault()
+      setIsPanning(true)
+      setPanStart({ x: e.clientX - pan.x, y: e.clientY - pan.y })
+    }
+  }, [pan])
+
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (isPanning) {
+      onPanChange({
+        x: e.clientX - panStart.x,
+        y: e.clientY - panStart.y
+      })
+    }
+  }, [isPanning, panStart, onPanChange])
+
+  const handleMouseUp = useCallback(() => {
+    setIsPanning(false)
+  }, [])
 
   const getComponentCenter = (component: ComponentData) => {
     return {
@@ -77,53 +115,67 @@ const Canvas = ({
   return (
     <div
       ref={drop}
-      className={`canvas ${isOver ? 'drag-over' : ''}`}
+      className={`canvas ${isOver ? 'drag-over' : ''} ${isPanning ? 'panning' : ''}`}
       onClick={handleCanvasClick}
+      onWheel={handleWheel}
+      onMouseDown={handleMouseDown}
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseUp}
     >
       <div className="canvas-grid" />
 
-      {/* Render connections */}
-      <svg className="connections-layer">
-        {connections.map(connection => {
-          const fromComponent = components.find(c => c.id === connection.from)
-          const toComponent = components.find(c => c.id === connection.to)
+      <div
+        className="canvas-content"
+        style={{
+          transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+          transformOrigin: '0 0'
+        }}
+      >
+        {/* Render connections */}
+        <svg className="connections-layer">
+          {connections.map(connection => {
+            const fromComponent = components.find(c => c.id === connection.from)
+            const toComponent = components.find(c => c.id === connection.to)
 
-          if (!fromComponent || !toComponent) return null
+            if (!fromComponent || !toComponent) return null
 
-          const from = getComponentCenter(fromComponent)
-          const to = getComponentCenter(toComponent)
+            const from = getComponentCenter(fromComponent)
+            const to = getComponentCenter(toComponent)
 
-          return (
-            <ConnectionLine
-              key={connection.id}
-              id={connection.id}
-              from={from}
-              to={to}
-              onRemove={() => onRemoveConnection(connection.id)}
-            />
-          )
-        })}
-      </svg>
+            return (
+              <ConnectionLine
+                key={connection.id}
+                id={connection.id}
+                from={from}
+                to={to}
+                onRemove={() => onRemoveConnection(connection.id)}
+              />
+            )
+          })}
+        </svg>
 
-      {/* Render components */}
-      {components.map(component => (
-        <CanvasComponent
-          key={component.id}
-          component={component}
-          isSelected={selectedComponent === component.id}
-          onUpdate={onUpdateComponent}
-          onRemove={onRemoveComponent}
-          onSelect={onSelectComponent}
-          onConnect={onAddConnection}
-          allComponents={components}
-        />
-      ))}
+        {/* Render components */}
+        {components.map(component => (
+          <CanvasComponent
+            key={component.id}
+            component={component}
+            isSelected={selectedComponent === component.id}
+            onUpdate={onUpdateComponent}
+            onRemove={onRemoveComponent}
+            onSelect={onSelectComponent}
+            onConnect={onAddConnection}
+            allComponents={components}
+          />
+        ))}
 
-      {components.length === 0 && !isOver && (
-        <div className="canvas-placeholder">
-          <p>Drag components from the palette to start designing</p>
-        </div>
-      )}
+        {components.length === 0 && !isOver && (
+          <div className="canvas-placeholder">
+            <p>Drag components from the palette to start designing</p>
+            <p className="canvas-hint">Use mouse wheel to zoom • Shift + drag to pan</p>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

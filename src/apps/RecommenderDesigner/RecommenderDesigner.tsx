@@ -11,6 +11,8 @@ const RecommenderDesigner = () => {
   const [components, setComponents] = useState<ComponentData[]>([])
   const [connections, setConnections] = useState<Connection[]>([])
   const [selectedComponent, setSelectedComponent] = useState<string | null>(null)
+  const [zoom, setZoom] = useState(1)
+  const [pan, setPan] = useState({ x: 0, y: 0 })
 
   const addComponent = useCallback((component: ComponentData) => {
     setComponents(prev => [...prev, component])
@@ -50,6 +52,19 @@ const RecommenderDesigner = () => {
     setSelectedComponent(null)
   }, [])
 
+  const handleZoomIn = useCallback(() => {
+    setZoom(prev => Math.min(prev + 0.1, 3))
+  }, [])
+
+  const handleZoomOut = useCallback(() => {
+    setZoom(prev => Math.max(prev - 0.1, 0.3))
+  }, [])
+
+  const handleZoomReset = useCallback(() => {
+    setZoom(1)
+    setPan({ x: 0, y: 0 })
+  }, [])
+
   return (
     <DndProvider backend={HTML5Backend}>
       <div className="recommender-designer">
@@ -57,6 +72,10 @@ const RecommenderDesigner = () => {
           onClear={clearCanvas}
           componentCount={components.length}
           connectionCount={connections.length}
+          zoom={zoom}
+          onZoomIn={handleZoomIn}
+          onZoomOut={handleZoomOut}
+          onZoomReset={handleZoomReset}
         />
         <div className="designer-content">
           <ComponentPalette />
@@ -64,6 +83,10 @@ const RecommenderDesigner = () => {
             components={components}
             connections={connections}
             selectedComponent={selectedComponent}
+            zoom={zoom}
+            pan={pan}
+            onZoomChange={setZoom}
+            onPanChange={setPan}
             onAddComponent={addComponent}
             onUpdateComponent={updateComponent}
             onRemoveComponent={removeComponent}
