@@ -31,11 +31,37 @@ A visual drag-and-drop tool for designing and prototyping recommender system arc
 
 ## Getting Started
 
-### Prerequisites
+You can run Mammoth either with Docker (recommended) or directly with Node.js.
+
+### Option 1: Docker (Recommended)
+
+#### Prerequisites
+- Docker installed (version 20.10 or higher)
+- Docker Compose installed (version 2.0 or higher)
+
+#### Quick Start with Docker
+
+```bash
+# Development mode (with hot reload)
+docker compose -f docker-compose.dev.yml up --build
+
+# Production mode
+docker compose up mammoth-prod --build
+```
+
+The application will be available at:
+- Development: `http://localhost:3000`
+- Production: `http://localhost:3001`
+
+For detailed Docker instructions, see [DOCKER.md](DOCKER.md)
+
+### Option 2: Local Installation
+
+#### Prerequisites
 - Node.js (v18 or higher)
 - npm or yarn
 
-### Installation
+#### Installation
 
 ```bash
 # Install dependencies
@@ -50,8 +76,6 @@ npm run build
 # Preview production build
 npm run preview
 ```
-
-### Development
 
 The application will be available at `http://localhost:3000`
 
