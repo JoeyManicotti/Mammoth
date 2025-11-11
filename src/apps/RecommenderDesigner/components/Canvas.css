@@ -1,0 +1,53 @@
+.canvas {
+  flex: 1;
+  position: relative;
+  background-color: var(--bg-primary);
+  overflow: auto;
+  min-height: 100%;
+}
+
+.canvas-grid {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image:
+    linear-gradient(var(--border-color) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border-color) 1px, transparent 1px);
+  background-size: 20px 20px;
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+.canvas.drag-over {
+  background-color: rgba(59, 130, 246, 0.05);
+}
+
+.canvas-placeholder {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  pointer-events: none;
+}
+
+.canvas-placeholder p {
+  font-size: 16px;
+  color: var(--text-muted);
+}
+
+.connections-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.connections-layer > * {
+  pointer-events: auto;
+}

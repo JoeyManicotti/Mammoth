@@ -1,0 +1,29 @@
+.connection-line {
+  pointer-events: none;
+}
+
+.connection-path {
+  stroke-dasharray: 5, 5;
+  animation: dash 20s linear infinite;
+}
+
+@keyframes dash {
+  to {
+    stroke-dashoffset: -1000;
+  }
+}
+
+.connection-delete {
+  pointer-events: auto;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.connection-line:hover .connection-delete {
+  opacity: 1;
+}
+
+.connection-delete:hover circle {
+  fill: var(--bg-hover);
+  stroke: var(--accent-error);
+}
