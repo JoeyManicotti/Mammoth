@@ -1,0 +1,35 @@
+.palette-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  cursor: grab;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.palette-item:hover {
+  background-color: var(--bg-hover);
+  border-color: var(--border-light);
+  transform: translateX(4px);
+}
+
+.palette-item.dragging {
+  opacity: 0.5;
+  cursor: grabbing;
+}
+
+.palette-item-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.palette-item-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  flex: 1;
+}

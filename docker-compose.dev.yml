@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  mammoth-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: mammoth-dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./src:/app/src
+      - ./public:/app/public
+      - ./index.html:/app/index.html
+      - ./vite.config.ts:/app/vite.config.ts
+      - ./tsconfig.json:/app/tsconfig.json
+      - ./tsconfig.node.json:/app/tsconfig.node.json
+      - node_modules:/app/node_modules
+    environment:
+      - NODE_ENV=development
+    restart: unless-stopped
+
+volumes:
+  node_modules:
