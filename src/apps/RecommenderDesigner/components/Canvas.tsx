@@ -19,6 +19,7 @@ interface CanvasProps {
   onSelectComponent: (id: string | null) => void
   onAddConnection: (from: string, to: string) => void
   onRemoveConnection: (id: string) => void
+  onComponentDoubleClick: (id: string) => void
 }
 
 const Canvas = ({
@@ -34,7 +35,8 @@ const Canvas = ({
   onRemoveComponent,
   onSelectComponent,
   onAddConnection,
-  onRemoveConnection
+  onRemoveConnection,
+  onComponentDoubleClick
 }: CanvasProps) => {
   const componentCounter = useRef(0)
   const [isPanning, setIsPanning] = useState(false)
@@ -165,6 +167,7 @@ const Canvas = ({
             onRemove={onRemoveComponent}
             onSelect={onSelectComponent}
             onConnect={onAddConnection}
+            onDoubleClick={onComponentDoubleClick}
             allComponents={components}
           />
         ))}

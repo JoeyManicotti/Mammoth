@@ -10,6 +10,7 @@ interface CanvasComponentProps {
   onRemove: (id: string) => void
   onSelect: (id: string) => void
   onConnect: (from: string, to: string) => void
+  onDoubleClick: (id: string) => void
   allComponents: ComponentData[]
 }
 
@@ -19,6 +20,7 @@ const CanvasComponent = ({
   onUpdate,
   onRemove,
   onSelect,
+  onDoubleClick,
 }: CanvasComponentProps) => {
   const [showMenu, setShowMenu] = useState(false)
 
@@ -48,9 +50,20 @@ const CanvasComponent = ({
     onSelect(component.id)
   }
 
+  const handleDoubleClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    onDoubleClick(component.id)
+  }
+
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation()
     onRemove(component.id)
+    setShowMenu(false)
+  }
+
+  const handleConfigure = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    onDoubleClick(component.id)
     setShowMenu(false)
   }
 
@@ -92,6 +105,7 @@ const CanvasComponent = ({
         top: component.position.y
       }}
       onClick={handleClick}
+      onDoubleClick={handleDoubleClick}
       onContextMenu={handleContextMenu}
     >
       <div className="component-icon">{getIcon()}</div>
@@ -99,6 +113,7 @@ const CanvasComponent = ({
 
       {showMenu && (
         <div className="component-menu">
+          <button onClick={handleConfigure}>Configure</button>
           <button onClick={handleConnectStart}>Connect</button>
           <button onClick={handleDelete}>Delete</button>
         </div>
