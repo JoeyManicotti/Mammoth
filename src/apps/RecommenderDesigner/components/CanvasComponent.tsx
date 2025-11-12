@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useDrag } from 'react-dnd'
 import { ComponentData } from '../types'
+import { getSimplifiedComponent, getComponentColor } from '../simplifiedComponents'
 import './CanvasComponent.css'
 
 interface CanvasComponentProps {
@@ -80,6 +81,13 @@ const CanvasComponent = ({
   }
 
   const getIcon = () => {
+    // Try to get icon from simplified components first
+    const simplifiedComp = getSimplifiedComponent(component.type)
+    if (simplifiedComp) {
+      return simplifiedComp.icon
+    }
+
+    // Fallback to old icon map
     const iconMap: Record<string, string> = {
       'data-source': '📊',
       'user-profile': '👤',
@@ -96,20 +104,31 @@ const CanvasComponent = ({
     return iconMap[component.type] || '📦'
   }
 
+  // Get color for component based on category
+  const simplifiedComp = getSimplifiedComponent(component.type)
+  const colors = simplifiedComp ? getComponentColor(simplifiedComp.category) : undefined
+
   return (
     <div
       ref={drag}
-      className={`canvas-component ${isSelected ? 'selected' : ''} ${isDragging ? 'dragging' : ''}`}
+      className={`canvas-component ${simplifiedComp ? `canvas-component-${simplifiedComp.category}` : ''} ${isSelected ? 'selected' : ''} ${isDragging ? 'dragging' : ''}`}
       style={{
         left: component.position.x,
-        top: component.position.y
+        top: component.position.y,
+        ...(colors ? {
+          background: colors.gradient,
+          borderColor: colors.border
+        } : {})
       }}
       onClick={handleClick}
       onDoubleClick={handleDoubleClick}
       onContextMenu={handleContextMenu}
     >
       <div className="component-icon">{getIcon()}</div>
-      <div className="component-label">{component.label}</div>
+      <div
+        className="component-label"
+        style={colors ? { color: colors.text } : {}}
+      >{component.label}</div>
 
       {showMenu && (
         <div className="component-menu">

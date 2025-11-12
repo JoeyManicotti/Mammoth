@@ -3,22 +3,23 @@
   width: 150px;
   padding: 16px;
   background-color: var(--bg-secondary);
-  border: 2px solid var(--border-color);
-  border-radius: 8px;
+  border: 3px solid var(--border-color);
+  border-radius: 12px;
   cursor: move;
   user-select: none;
   transition: all 0.2s ease;
   z-index: 2;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .canvas-component:hover {
-  border-color: var(--border-light);
-  box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
 }
 
 .canvas-component.selected {
-  border-color: var(--accent-blue);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.3), 0 4px 16px rgba(0, 0, 0, 0.4);
+  transform: scale(1.02);
 }
 
 .canvas-component.dragging {
@@ -48,10 +49,11 @@
 
 .component-label {
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text-primary);
   text-align: center;
   line-height: 1.3;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
 .component-menu {
