@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useDrag } from 'react-dnd'
 import { ComponentData } from '../types'
+import { getSimplifiedComponent, getComponentColor } from '../simplifiedComponents'
 import './CanvasComponent.css'
 
 interface CanvasComponentProps {
@@ -10,6 +11,7 @@ interface CanvasComponentProps {
   onRemove: (id: string) => void
   onSelect: (id: string) => void
   onConnect: (from: string, to: string) => void
+  onDoubleClick: (id: string) => void
   allComponents: ComponentData[]
 }
 
@@ -19,6 +21,7 @@ const CanvasComponent = ({
   onUpdate,
   onRemove,
   onSelect,
+  onDoubleClick,
 }: CanvasComponentProps) => {
   const [showMenu, setShowMenu] = useState(false)
 
@@ -48,9 +51,20 @@ const CanvasComponent = ({
     onSelect(component.id)
   }
 
+  const handleDoubleClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    onDoubleClick(component.id)
+  }
+
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation()
     onRemove(component.id)
+    setShowMenu(false)
+  }
+
+  const handleConfigure = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    onDoubleClick(component.id)
     setShowMenu(false)
   }
 
@@ -67,6 +81,13 @@ const CanvasComponent = ({
   }
 
   const getIcon = () => {
+    // Try to get icon from simplified components first
+    const simplifiedComp = getSimplifiedComponent(component.type)
+    if (simplifiedComp) {
+      return simplifiedComp.icon
+    }
+
+    // Fallback to old icon map
     const iconMap: Record<string, string> = {
       'data-source': '📊',
       'user-profile': '👤',
@@ -83,22 +104,35 @@ const CanvasComponent = ({
     return iconMap[component.type] || '📦'
   }
 
+  // Get color for component based on category
+  const simplifiedComp = getSimplifiedComponent(component.type)
+  const colors = simplifiedComp ? getComponentColor(simplifiedComp.category) : undefined
+
   return (
     <div
       ref={drag}
-      className={`canvas-component ${isSelected ? 'selected' : ''} ${isDragging ? 'dragging' : ''}`}
+      className={`canvas-component ${simplifiedComp ? `canvas-component-${simplifiedComp.category}` : ''} ${isSelected ? 'selected' : ''} ${isDragging ? 'dragging' : ''}`}
       style={{
         left: component.position.x,
-        top: component.position.y
+        top: component.position.y,
+        ...(colors ? {
+          background: colors.gradient,
+          borderColor: colors.border
+        } : {})
       }}
       onClick={handleClick}
+      onDoubleClick={handleDoubleClick}
       onContextMenu={handleContextMenu}
     >
       <div className="component-icon">{getIcon()}</div>
-      <div className="component-label">{component.label}</div>
+      <div
+        className="component-label"
+        style={colors ? { color: colors.text } : {}}
+      >{component.label}</div>
 
       {showMenu && (
         <div className="component-menu">
+          <button onClick={handleConfigure}>Configure</button>
           <button onClick={handleConnectStart}>Connect</button>
           <button onClick={handleDelete}>Delete</button>
         </div>

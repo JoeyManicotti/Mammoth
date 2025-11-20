@@ -59,3 +59,16 @@
 .toolbar-button:active {
   transform: scale(0.98);
 }
+
+.zoom-controls {
+  display: flex;
+  gap: 4px;
+  margin-right: 12px;
+}
+
+.zoom-button {
+  min-width: 45px;
+  padding: 8px 12px;
+  font-size: 16px;
+  font-weight: 600;
+}
