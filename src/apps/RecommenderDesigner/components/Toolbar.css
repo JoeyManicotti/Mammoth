@@ -72,3 +72,16 @@
   font-size: 16px;
   font-weight: 600;
 }
+
+.toolbar-divider {
+  width: 1px;
+  height: 28px;
+  background-color: var(--border-color);
+  margin: 0 8px;
+}
+
+.clear-button:hover {
+  background-color: rgba(239, 68, 68, 0.1);
+  border-color: var(--accent-error);
+  color: var(--accent-error);
+}

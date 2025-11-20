@@ -1,27 +1,35 @@
 import { useState } from 'react'
 import { useDrag } from 'react-dnd'
 import { ComponentData } from '../types'
-import { getSimplifiedComponent, getComponentColor } from '../simplifiedComponents'
+import { getSimplifiedComponent, getComponentColor, isValidConnection } from '../simplifiedComponents'
 import './CanvasComponent.css'
 
 interface CanvasComponentProps {
   component: ComponentData
   isSelected: boolean
+  isConnecting: boolean
+  connectingFrom: string | null
   onUpdate: (id: string, updates: Partial<ComponentData>) => void
   onRemove: (id: string) => void
   onSelect: (id: string) => void
   onConnect: (from: string, to: string) => void
   onDoubleClick: (id: string) => void
+  onStartConnection: (id: string | null) => void
   allComponents: ComponentData[]
 }
 
 const CanvasComponent = ({
   component,
   isSelected,
+  isConnecting,
+  connectingFrom,
   onUpdate,
   onRemove,
   onSelect,
+  onConnect,
   onDoubleClick,
+  onStartConnection,
+  allComponents
 }: CanvasComponentProps) => {
   const [showMenu, setShowMenu] = useState(false)
 
@@ -70,8 +78,30 @@ const CanvasComponent = ({
 
   const handleConnectStart = (e: React.MouseEvent) => {
     e.stopPropagation()
-    // TODO: Implement connection logic
+    onStartConnection(component.id)
     setShowMenu(false)
+  }
+
+  const handleConnectionPointClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+
+    if (!connectingFrom) {
+      // Start connection from this component
+      onStartConnection(component.id)
+    } else if (connectingFrom === component.id) {
+      // Cancel connection if clicking same component
+      onStartConnection(null)
+    } else {
+      // Complete connection to this component
+      const fromComp = allComponents.find(c => c.id === connectingFrom)
+      if (fromComp && isValidConnection(fromComp.type, component.type)) {
+        onConnect(connectingFrom, component.id)
+        onStartConnection(null)
+      } else {
+        // Invalid connection - show feedback or just cancel
+        onStartConnection(null)
+      }
+    }
   }
 
   const handleContextMenu = (e: React.MouseEvent) => {
@@ -111,7 +141,7 @@ const CanvasComponent = ({
   return (
     <div
       ref={drag}
-      className={`canvas-component ${simplifiedComp ? `canvas-component-${simplifiedComp.category}` : ''} ${isSelected ? 'selected' : ''} ${isDragging ? 'dragging' : ''}`}
+      className={`canvas-component ${simplifiedComp ? `canvas-component-${simplifiedComp.category}` : ''} ${isSelected ? 'selected' : ''} ${isDragging ? 'dragging' : ''} ${isConnecting ? 'connecting' : ''}`}
       style={{
         left: component.position.x,
         top: component.position.y,
@@ -139,10 +169,10 @@ const CanvasComponent = ({
       )}
 
       {/* Connection points */}
-      <div className="connection-point top" />
-      <div className="connection-point right" />
-      <div className="connection-point bottom" />
-      <div className="connection-point left" />
+      <div className="connection-point top" onClick={handleConnectionPointClick} />
+      <div className="connection-point right" onClick={handleConnectionPointClick} />
+      <div className="connection-point bottom" onClick={handleConnectionPointClick} />
+      <div className="connection-point left" onClick={handleConnectionPointClick} />
     </div>
   )
 }
