@@ -111,10 +111,65 @@ const Canvas = ({
     setIsPanning(false)
   }, [])
 
-  const getComponentCenter = (component: ComponentData) => {
-    return {
-      x: component.position.x + 75, // half of component width (150px)
-      y: component.position.y + 40  // half of component height (80px)
+  // Component dimensions
+  const COMPONENT_WIDTH = 150
+  const COMPONENT_HEIGHT = 80
+
+  /**
+   * Calculate edge connection point based on the relative position of target component
+   * This ensures connections attach to the edges rather than the center
+   */
+  const getConnectionPoint = (fromComp: ComponentData, toComp: ComponentData, isSource: boolean) => {
+    const fromCenter = {
+      x: fromComp.position.x + COMPONENT_WIDTH / 2,
+      y: fromComp.position.y + COMPONENT_HEIGHT / 2
+    }
+    const toCenter = {
+      x: toComp.position.x + COMPONENT_WIDTH / 2,
+      y: toComp.position.y + COMPONENT_HEIGHT / 2
+    }
+
+    // Calculate angle from source to target
+    const dx = toCenter.x - fromCenter.x
+    const dy = toCenter.y - fromCenter.y
+    const angle = Math.atan2(dy, dx)
+
+    // Determine which edge to use based on angle
+    const component = isSource ? fromComp : toComp
+    const baseX = component.position.x
+    const baseY = component.position.y
+
+    // Convert angle to degrees for easier logic
+    const degrees = (angle * 180 / Math.PI + 360) % 360
+
+    // For source component, determine exit edge
+    // For target component, determine entry edge (opposite direction)
+    const adjustedDegrees = isSource ? degrees : (degrees + 180) % 360
+
+    if (adjustedDegrees >= 315 || adjustedDegrees < 45) {
+      // Right edge
+      return {
+        x: baseX + COMPONENT_WIDTH,
+        y: baseY + COMPONENT_HEIGHT / 2
+      }
+    } else if (adjustedDegrees >= 45 && adjustedDegrees < 135) {
+      // Bottom edge
+      return {
+        x: baseX + COMPONENT_WIDTH / 2,
+        y: baseY + COMPONENT_HEIGHT
+      }
+    } else if (adjustedDegrees >= 135 && adjustedDegrees < 225) {
+      // Left edge
+      return {
+        x: baseX,
+        y: baseY + COMPONENT_HEIGHT / 2
+      }
+    } else {
+      // Top edge
+      return {
+        x: baseX + COMPONENT_WIDTH / 2,
+        y: baseY
+      }
     }
   }
 
@@ -146,8 +201,8 @@ const Canvas = ({
 
             if (!fromComponent || !toComponent) return null
 
-            const from = getComponentCenter(fromComponent)
-            const to = getComponentCenter(toComponent)
+            const from = getConnectionPoint(fromComponent, toComponent, true)
+            const to = getConnectionPoint(fromComponent, toComponent, false)
 
             return (
               <ConnectionLine
