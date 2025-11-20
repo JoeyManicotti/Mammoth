@@ -2,6 +2,9 @@ import './Toolbar.css'
 
 interface ToolbarProps {
   onClear: () => void
+  onSave: () => void
+  onLoad: () => void
+  onHelp: () => void
   componentCount: number
   connectionCount: number
   zoom: number
@@ -12,6 +15,9 @@ interface ToolbarProps {
 
 const Toolbar = ({
   onClear,
+  onSave,
+  onLoad,
+  onHelp,
   componentCount,
   connectionCount,
   zoom,
@@ -39,6 +45,16 @@ const Toolbar = ({
         </span>
       </div>
       <div className="toolbar-section">
+        <button className="toolbar-button" onClick={onSave} title="Save workflow to file">
+          💾 Save
+        </button>
+        <button className="toolbar-button" onClick={onLoad} title="Load workflow from file">
+          📂 Load
+        </button>
+        <button className="toolbar-button" onClick={onHelp} title="Show help">
+          ❓ Help
+        </button>
+        <div className="toolbar-divider"></div>
         <div className="zoom-controls">
           <button className="toolbar-button zoom-button" onClick={onZoomOut} title="Zoom Out">
             −
@@ -50,8 +66,8 @@ const Toolbar = ({
             +
           </button>
         </div>
-        <button className="toolbar-button" onClick={onClear}>
-          Clear Canvas
+        <button className="toolbar-button clear-button" onClick={onClear}>
+          🗑️ Clear Canvas
         </button>
       </div>
     </div>

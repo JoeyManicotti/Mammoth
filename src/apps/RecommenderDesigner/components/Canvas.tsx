@@ -9,6 +9,7 @@ interface CanvasProps {
   components: ComponentData[]
   connections: Connection[]
   selectedComponent: string | null
+  connectingFrom: string | null
   zoom: number
   pan: { x: number; y: number }
   onZoomChange: (zoom: number) => void
@@ -20,12 +21,14 @@ interface CanvasProps {
   onAddConnection: (from: string, to: string) => void
   onRemoveConnection: (id: string) => void
   onComponentDoubleClick: (id: string) => void
+  onSetConnectingFrom: (id: string | null) => void
 }
 
 const Canvas = ({
   components,
   connections,
   selectedComponent,
+  connectingFrom,
   zoom,
   pan,
   onZoomChange,
@@ -36,7 +39,8 @@ const Canvas = ({
   onSelectComponent,
   onAddConnection,
   onRemoveConnection,
-  onComponentDoubleClick
+  onComponentDoubleClick,
+  onSetConnectingFrom
 }: CanvasProps) => {
   const componentCounter = useRef(0)
   const [isPanning, setIsPanning] = useState(false)
@@ -163,11 +167,14 @@ const Canvas = ({
             key={component.id}
             component={component}
             isSelected={selectedComponent === component.id}
+            isConnecting={connectingFrom === component.id}
             onUpdate={onUpdateComponent}
             onRemove={onRemoveComponent}
             onSelect={onSelectComponent}
             onConnect={onAddConnection}
             onDoubleClick={onComponentDoubleClick}
+            onStartConnection={onSetConnectingFrom}
+            connectingFrom={connectingFrom}
             allComponents={components}
           />
         ))}
