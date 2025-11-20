@@ -9,4 +9,69 @@
   display: flex;
   flex: 1;
   overflow: hidden;
+  position: relative;
+}
+
+/* Resizable Palette */
+.resizable-palette {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 200px;
+  max-width: 600px;
+}
+
+.resize-handle {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background-color: transparent;
+  cursor: col-resize;
+  z-index: 10;
+  transition: background-color 0.2s ease;
+}
+
+.resize-handle:hover {
+  background-color: var(--accent-blue);
+}
+
+.resize-handle:active {
+  background-color: var(--accent-blue);
+}
+
+/* Palette Toggle Button */
+.palette-toggle {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 60px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-left: none;
+  border-radius: 0 8px 8px 0;
+  color: var(--text-primary);
+  font-size: 14px;
+  cursor: pointer;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.2);
+}
+
+.palette-toggle:hover {
+  background-color: var(--bg-hover);
+  width: 28px;
+  color: var(--accent-blue);
+}
+
+.palette-toggle.collapsed {
+  left: 0;
+  transform: translateY(-50%);
 }

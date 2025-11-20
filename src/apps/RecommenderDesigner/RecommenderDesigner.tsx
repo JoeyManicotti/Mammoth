@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { DndProvider } from 'react-dnd'
 import { HTML5Backend } from 'react-dnd-html5-backend'
 import Canvas from './components/Canvas'
@@ -7,6 +7,7 @@ import Toolbar from './components/Toolbar'
 import ConfigPanel from './components/ConfigPanel'
 import HelpModal from './components/HelpModal'
 import { ComponentData, Connection } from './types'
+import { getSimplifiedComponent } from './simplifiedComponents'
 import './RecommenderDesigner.css'
 
 const STORAGE_KEY = 'mammoth-recommender-canvas'
@@ -20,8 +21,12 @@ const RecommenderDesigner = () => {
   const [showHelp, setShowHelp] = useState(false)
   const [zoom, setZoom] = useState(1)
   const [pan, setPan] = useState({ x: 0, y: 0 })
+  const [paletteCollapsed, setPaletteCollapsed] = useState(false)
+  const [paletteWidth, setPaletteWidth] = useState(300)
+  const [isResizing, setIsResizing] = useState(false)
+  const componentCounter = useRef(0)
 
-  // Load canvas from localStorage on mount
+  // Load canvas and UI state from localStorage on mount
   useEffect(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY)
@@ -29,25 +34,33 @@ const RecommenderDesigner = () => {
         const data = JSON.parse(saved)
         setComponents(data.components || [])
         setConnections(data.connections || [])
+        if (data.uiState) {
+          setPaletteCollapsed(data.uiState.paletteCollapsed || false)
+          setPaletteWidth(data.uiState.paletteWidth || 300)
+        }
       }
     } catch (error) {
       console.error('Failed to load canvas from storage:', error)
     }
   }, [])
 
-  // Auto-save canvas to localStorage whenever it changes
+  // Auto-save canvas and UI state to localStorage whenever it changes
   useEffect(() => {
     try {
       const data = {
         components,
         connections,
+        uiState: {
+          paletteCollapsed,
+          paletteWidth
+        },
         savedAt: new Date().toISOString()
       }
       localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
     } catch (error) {
       console.error('Failed to save canvas to storage:', error)
     }
-  }, [components, connections])
+  }, [components, connections, paletteCollapsed, paletteWidth])
 
   const addComponent = useCallback((component: ComponentData) => {
     setComponents(prev => [...prev, component])
@@ -160,6 +173,88 @@ const RecommenderDesigner = () => {
     input.click()
   }, [])
 
+  const handleLoadWorkflow = useCallback((workflow: { name: string; blocks: string[]; description?: string }) => {
+    // Clear existing canvas
+    setComponents([])
+    setConnections([])
+    setSelectedComponent(null)
+
+    // Create components for each block
+    const newComponents: ComponentData[] = []
+    const newConnections: Connection[] = []
+
+    const startX = 100
+    const startY = 100
+    const horizontalSpacing = 220
+    const verticalSpacing = 140
+
+    workflow.blocks.forEach((blockType, index) => {
+      const componentDef = getSimplifiedComponent(blockType)
+      if (!componentDef) return
+
+      componentCounter.current += 1
+
+      // Calculate position in a flowing layout
+      const row = Math.floor(index / 4)
+      const col = index % 4
+      const x = startX + col * horizontalSpacing
+      const y = startY + row * verticalSpacing
+
+      const newComponent: ComponentData = {
+        id: `component-${componentCounter.current}`,
+        type: blockType as ComponentData['type'],
+        label: componentDef.label,
+        position: { x, y }
+      }
+
+      newComponents.push(newComponent)
+
+      // Create connection to previous component
+      if (index > 0) {
+        const prevComponent = newComponents[index - 1]
+        newConnections.push({
+          id: `${prevComponent.id}-${newComponent.id}`,
+          from: prevComponent.id,
+          to: newComponent.id
+        })
+      }
+    })
+
+    setComponents(newComponents)
+    setConnections(newConnections)
+
+    // Reset zoom and pan
+    setZoom(1)
+    setPan({ x: 0, y: 0 })
+  }, [])
+
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    setIsResizing(true)
+    e.preventDefault()
+  }, [])
+
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (isResizing) {
+      const newWidth = Math.max(200, Math.min(600, e.clientX))
+      setPaletteWidth(newWidth)
+    }
+  }, [isResizing])
+
+  const handleMouseUp = useCallback(() => {
+    setIsResizing(false)
+  }, [])
+
+  useEffect(() => {
+    if (isResizing) {
+      document.addEventListener('mousemove', handleMouseMove)
+      document.addEventListener('mouseup', handleMouseUp)
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove)
+        document.removeEventListener('mouseup', handleMouseUp)
+      }
+    }
+  }, [isResizing, handleMouseMove, handleMouseUp])
+
   return (
     <DndProvider backend={HTML5Backend}>
       <div className="recommender-designer">
@@ -176,7 +271,25 @@ const RecommenderDesigner = () => {
           onZoomReset={handleZoomReset}
         />
         <div className="designer-content">
-          <ComponentPalette />
+          {!paletteCollapsed && (
+            <div
+              className="resizable-palette"
+              style={{ width: paletteWidth }}
+            >
+              <ComponentPalette onLoadWorkflow={handleLoadWorkflow} />
+              <div
+                className="resize-handle"
+                onMouseDown={handleMouseDown}
+              />
+            </div>
+          )}
+          <button
+            className={`palette-toggle ${paletteCollapsed ? 'collapsed' : ''}`}
+            onClick={() => setPaletteCollapsed(!paletteCollapsed)}
+            title={paletteCollapsed ? 'Show component palette' : 'Hide component palette'}
+          >
+            {paletteCollapsed ? '▶' : '◀'}
+          </button>
           <Canvas
             components={components}
             connections={connections}

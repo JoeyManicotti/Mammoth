@@ -229,3 +229,7 @@ dist-ssr/
 *.njsproj
 *.sln
 *.sw?
+
+# Mammoth specific
+# Cache directory for Kaggle datasets
+data/

@@ -190,12 +190,34 @@ export const SIMPLIFIED_COMPONENTS: SimplifiedComponentDefinition[] = [
  */
 export const EXAMPLE_WORKFLOWS = [
   {
+    name: 'Quick Start: MovieLens',
+    description: 'Load MovieLens 100K dataset and train a collaborative filter',
+    blocks: [
+      'data-source',
+      'split',
+      'collaborative-filtering',
+      'predictions',
+      'evaluation'
+    ]
+  },
+  {
     name: 'Simple Collaborative Filtering',
     description: 'Basic user-based recommendation system',
     blocks: [
       'data-source',
       'split',
       'collaborative-filtering',
+      'predictions',
+      'evaluation'
+    ]
+  },
+  {
+    name: 'XGBoost Quick Test',
+    description: 'Fast gradient boosting pipeline',
+    blocks: [
+      'data-source',
+      'split',
+      'xgboost',
       'predictions',
       'evaluation'
     ]

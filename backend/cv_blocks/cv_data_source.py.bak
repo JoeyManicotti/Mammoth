@@ -1,0 +1,304 @@
+"""CV Data Source Block - Load video, images, or generate synthetic data"""
+
+import cv2
+import numpy as np
+from pathlib import Path
+from typing import Dict, Any, Optional, List
+import logging
+
+from backend.blocks.base import BaseBlock, BlockOutput, BlockStatus
+
+logger = logging.getLogger(__name__)
+
+
+class CVDataSourceBlock(BaseBlock):
+    """Load video frames, image sequences, or generate synthetic tracking data
+
+    Supported sources:
+    - video: Load from video file
+    - images: Load sequence of images
+    - webcam: Capture from webcam
+    - synthetic: Generate synthetic tracking scenario
+    - benchmark: Load from benchmark datasets (OTB, VOT)
+    """
+
+    def __init__(self, block_id: str):
+        super().__init__(block_id)
+        self.block_type = 'cv-data-source'
+
+    def validate_config(self, config: Dict[str, Any]) -> tuple[bool, Optional[str]]:
+        """Validate data source configuration"""
+        source = config.get('source', 'synthetic')
+
+        if source not in ['video', 'images', 'webcam', 'synthetic', 'benchmark']:
+            return False, f"Invalid source: {source}"
+
+        if source == 'video' and 'video_path' not in config:
+            return False, "video_path required for video source"
+
+        if source == 'images' and 'image_dir' not in config:
+            return False, "image_dir required for images source"
+
+        if source == 'benchmark' and 'dataset' not in config:
+            return False, "dataset required for benchmark source"
+
+        return True, None
+
+    def execute(self, inputs: Dict[str, Any]) -> BlockOutput:
+        """Load video/image data"""
+        try:
+            source = self.config.get('source', 'synthetic')
+
+            if source == 'synthetic':
+                return self._generate_synthetic()
+            elif source == 'video':
+                return self._load_video()
+            elif source == 'images':
+                return self._load_images()
+            elif source == 'webcam':
+                return self._load_webcam()
+            elif source == 'benchmark':
+                return self._load_benchmark()
+            else:
+                return self._error(f"Unknown source: {source}")
+
+        except Exception as e:
+            logger.error(f"Error loading CV data: {e}")
+            return self._error(str(e))
+
+    def _generate_synthetic(self) -> BlockOutput:
+        """Generate synthetic tracking scenario"""
+        width = self.config.get('width', 640)
+        height = self.config.get('height', 480)
+        n_frames = self.config.get('n_frames', 100)
+        object_size = self.config.get('object_size', 50)
+
+        frames = []
+        ground_truth = []
+
+        # Generate moving object trajectory (circular motion)
+        center_x, center_y = width // 2, height // 2
+        radius = min(width, height) // 4
+
+        for i in range(n_frames):
+            # Create blank frame
+            frame = np.ones((height, width, 3), dtype=np.uint8) * 240
+
+            # Calculate object position (circular motion)
+            angle = (i / n_frames) * 2 * np.pi
+            x = int(center_x + radius * np.cos(angle))
+            y = int(center_y + radius * np.sin(angle))
+
+            # Draw object (colored rectangle)
+            color = (0, 255, 0)  # Green
+            cv2.rectangle(
+                frame,
+                (x - object_size // 2, y - object_size // 2),
+                (x + object_size // 2, y + object_size // 2),
+                color,
+                -1
+            )
+
+            # Add some noise
+            noise = np.random.randint(0, 30, frame.shape, dtype=np.uint8)
+            frame = cv2.add(frame, noise)
+
+            frames.append(frame)
+            ground_truth.append({
+                'frame': i,
+                'bbox': [
+                    x - object_size // 2,
+                    y - object_size // 2,
+                    object_size,
+                    object_size
+                ],
+                'center': [x, y]
+            })
+
+        # Initial bounding box for tracking
+        init_bbox = ground_truth[0]['bbox']
+
+        return BlockOutput(
+            status=BlockStatus.COMPLETED,
+            data={
+                'frames': frames,
+                'ground_truth': ground_truth,
+                'init_bbox': init_bbox,
+                'width': width,
+                'height': height,
+                'n_frames': n_frames
+            },
+            metrics={
+                'n_frames': n_frames,
+                'width': width,
+                'height': height,
+                'source': 'synthetic'
+            }
+        )
+
+    def _load_video(self) -> BlockOutput:
+        """Load video file"""
+        video_path = self.config.get('video_path')
+        max_frames = self.config.get('max_frames', -1)
+
+        if not Path(video_path).exists():
+            return self._error(f"Video file not found: {video_path}")
+
+        cap = cv2.VideoCapture(video_path)
+        if not cap.isOpened():
+            return self._error(f"Could not open video: {video_path}")
+
+        frames = []
+        frame_count = 0
+
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
+
+            frames.append(frame)
+            frame_count += 1
+
+            if max_frames > 0 and frame_count >= max_frames:
+                break
+
+        cap.release()
+
+        if len(frames) == 0:
+            return self._error("No frames loaded from video")
+
+        height, width = frames[0].shape[:2]
+
+        # Get initial bbox from config or use center region
+        init_bbox = self.config.get('init_bbox', [
+            width // 4, height // 4, width // 2, height // 2
+        ])
+
+        return BlockOutput(
+            status=BlockStatus.COMPLETED,
+            data={
+                'frames': frames,
+                'init_bbox': init_bbox,
+                'width': width,
+                'height': height,
+                'n_frames': len(frames),
+                'source_path': video_path
+            },
+            metrics={
+                'n_frames': len(frames),
+                'width': width,
+                'height': height,
+                'source': 'video',
+                'fps': cap.get(cv2.CAP_PROP_FPS)
+            }
+        )
+
+    def _load_images(self) -> BlockOutput:
+        """Load sequence of images"""
+        image_dir = Path(self.config.get('image_dir'))
+        pattern = self.config.get('pattern', '*.jpg')
+        max_frames = self.config.get('max_frames', -1)
+
+        if not image_dir.exists():
+            return self._error(f"Image directory not found: {image_dir}")
+
+        # Get sorted list of image files
+        image_files = sorted(image_dir.glob(pattern))
+
+        if len(image_files) == 0:
+            return self._error(f"No images found in {image_dir} with pattern {pattern}")
+
+        frames = []
+        for i, img_path in enumerate(image_files):
+            if max_frames > 0 and i >= max_frames:
+                break
+
+            frame = cv2.imread(str(img_path))
+            if frame is None:
+                logger.warning(f"Could not load image: {img_path}")
+                continue
+
+            frames.append(frame)
+
+        if len(frames) == 0:
+            return self._error("No frames loaded from images")
+
+        height, width = frames[0].shape[:2]
+
+        # Get initial bbox from config or use center region
+        init_bbox = self.config.get('init_bbox', [
+            width // 4, height // 4, width // 2, height // 2
+        ])
+
+        return BlockOutput(
+            status=BlockStatus.COMPLETED,
+            data={
+                'frames': frames,
+                'init_bbox': init_bbox,
+                'width': width,
+                'height': height,
+                'n_frames': len(frames),
+                'source_path': str(image_dir)
+            },
+            metrics={
+                'n_frames': len(frames),
+                'width': width,
+                'height': height,
+                'source': 'images'
+            }
+        )
+
+    def _load_webcam(self) -> BlockOutput:
+        """Capture frames from webcam"""
+        camera_id = self.config.get('camera_id', 0)
+        n_frames = self.config.get('n_frames', 100)
+
+        cap = cv2.VideoCapture(camera_id)
+        if not cap.isOpened():
+            return self._error(f"Could not open webcam: {camera_id}")
+
+        frames = []
+        for _ in range(n_frames):
+            ret, frame = cap.read()
+            if not ret:
+                break
+            frames.append(frame)
+
+        cap.release()
+
+        if len(frames) == 0:
+            return self._error("No frames captured from webcam")
+
+        height, width = frames[0].shape[:2]
+
+        # Get initial bbox from config or use center region
+        init_bbox = self.config.get('init_bbox', [
+            width // 4, height // 4, width // 2, height // 2
+        ])
+
+        return BlockOutput(
+            status=BlockStatus.COMPLETED,
+            data={
+                'frames': frames,
+                'init_bbox': init_bbox,
+                'width': width,
+                'height': height,
+                'n_frames': len(frames)
+            },
+            metrics={
+                'n_frames': len(frames),
+                'width': width,
+                'height': height,
+                'source': 'webcam'
+            }
+        )
+
+    def _load_benchmark(self) -> BlockOutput:
+        """Load benchmark dataset (placeholder for OTB, VOT, etc.)"""
+        dataset = self.config.get('dataset', 'otb-test')
+
+        # For now, generate synthetic data as placeholder
+        # In production, this would load actual benchmark datasets
+        logger.info(f"Loading benchmark dataset: {dataset} (using synthetic for now)")
+
+        return self._generate_synthetic()

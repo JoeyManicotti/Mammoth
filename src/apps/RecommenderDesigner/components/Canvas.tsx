@@ -111,9 +111,11 @@ const Canvas = ({
     setIsPanning(false)
   }, [])
 
-  // Component dimensions
-  const COMPONENT_WIDTH = 150
-  const COMPONENT_HEIGHT = 80
+  // Component dimensions (including padding and border)
+  // Base: 150px width + 32px padding (16px each side) + 6px border (3px each side) = 188px
+  // Base height varies but averages around 80px content + 32px padding + 6px border = 118px
+  const COMPONENT_WIDTH = 188
+  const COMPONENT_HEIGHT = 118
 
   /**
    * Calculate edge connection point based on the relative position of target component

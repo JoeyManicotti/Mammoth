@@ -66,7 +66,7 @@ export const COMPONENT_SPECIFICATIONS: Record<string, ComponentSpec> = {
         name: 'dataSource',
         type: 'select',
         default: 'csv',
-        options: ['csv', 'database', 'api', 'synthetic'],
+        options: ['csv', 'kaggle', 'database', 'api', 'synthetic'],
         description: 'Source of the data'
       },
       {
@@ -74,6 +74,19 @@ export const COMPONENT_SPECIFICATIONS: Record<string, ComponentSpec> = {
         type: 'string',
         default: '',
         description: 'Path to data file (for CSV source)'
+      },
+      {
+        name: 'kaggleDataset',
+        type: 'select',
+        default: 'movielens-100k',
+        options: [
+          'movielens-100k',
+          'jester-jokes',
+          'book-crossing',
+          'anime-recommendations',
+          'restaurant-ratings'
+        ],
+        description: 'Kaggle dataset to load'
       },
       {
         name: 'sampleSize',

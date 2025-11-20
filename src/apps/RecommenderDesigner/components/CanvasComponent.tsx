@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { useDrag } from 'react-dnd'
 import { ComponentData } from '../types'
 import { getSimplifiedComponent, getComponentColor, isValidConnection } from '../simplifiedComponents'
@@ -31,8 +30,6 @@ const CanvasComponent = ({
   onStartConnection,
   allComponents
 }: CanvasComponentProps) => {
-  const [showMenu, setShowMenu] = useState(false)
-
   const [{ isDragging }, drag] = useDrag(() => ({
     type: 'canvas-component',
     item: () => {
@@ -64,24 +61,6 @@ const CanvasComponent = ({
     onDoubleClick(component.id)
   }
 
-  const handleDelete = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    onRemove(component.id)
-    setShowMenu(false)
-  }
-
-  const handleConfigure = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    onDoubleClick(component.id)
-    setShowMenu(false)
-  }
-
-  const handleConnectStart = (e: React.MouseEvent) => {
-    e.stopPropagation()
-    onStartConnection(component.id)
-    setShowMenu(false)
-  }
-
   const handleConnectionPointClick = (e: React.MouseEvent) => {
     e.stopPropagation()
 
@@ -107,7 +86,29 @@ const CanvasComponent = ({
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
-    setShowMenu(!showMenu)
+
+    // Right-click auto-connect: start connection if not currently connecting
+    if (!connectingFrom) {
+      onStartConnection(component.id)
+    } else if (connectingFrom !== component.id) {
+      // Complete connection if already connecting from another component
+      const fromComp = allComponents.find(c => c.id === connectingFrom)
+      if (fromComp && isValidConnection(fromComp.type, component.type)) {
+        onConnect(connectingFrom, component.id)
+        onStartConnection(null)
+      } else {
+        onStartConnection(null)
+      }
+    } else {
+      // Cancel connection if right-clicking the same component
+      onStartConnection(null)
+    }
+  }
+
+  const handleDeleteButtonClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    e.preventDefault()
+    onRemove(component.id)
   }
 
   const getIcon = () => {
@@ -154,25 +155,44 @@ const CanvasComponent = ({
       onDoubleClick={handleDoubleClick}
       onContextMenu={handleContextMenu}
     >
+      {/* Delete button (visible when selected) */}
+      {isSelected && (
+        <button
+          className="component-delete-button"
+          onClick={handleDeleteButtonClick}
+          title="Delete component"
+        >
+          ×
+        </button>
+      )}
+
       <div className="component-icon">{getIcon()}</div>
       <div
         className="component-label"
         style={colors ? { color: colors.text } : {}}
       >{component.label}</div>
 
-      {showMenu && (
-        <div className="component-menu">
-          <button onClick={handleConfigure}>Configure</button>
-          <button onClick={handleConnectStart}>Connect</button>
-          <button onClick={handleDelete}>Delete</button>
-        </div>
-      )}
-
-      {/* Connection points */}
-      <div className="connection-point top" onClick={handleConnectionPointClick} />
-      <div className="connection-point right" onClick={handleConnectionPointClick} />
-      <div className="connection-point bottom" onClick={handleConnectionPointClick} />
-      <div className="connection-point left" onClick={handleConnectionPointClick} />
+      {/* Connection points - Blue dots on each edge */}
+      <div
+        className={`connection-point top ${connectingFrom === component.id ? 'active' : ''}`}
+        onClick={handleConnectionPointClick}
+        title="Click to connect"
+      />
+      <div
+        className={`connection-point right ${connectingFrom === component.id ? 'active' : ''}`}
+        onClick={handleConnectionPointClick}
+        title="Click to connect"
+      />
+      <div
+        className={`connection-point bottom ${connectingFrom === component.id ? 'active' : ''}`}
+        onClick={handleConnectionPointClick}
+        title="Click to connect"
+      />
+      <div
+        className={`connection-point left ${connectingFrom === component.id ? 'active' : ''}`}
+        onClick={handleConnectionPointClick}
+        title="Click to connect"
+      />
     </div>
   )
 }
