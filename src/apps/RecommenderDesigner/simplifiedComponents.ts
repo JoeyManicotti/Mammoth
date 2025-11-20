@@ -61,7 +61,7 @@ export const SIMPLIFIED_COMPONENTS: SimplifiedComponentDefinition[] = [
   // INPUT BLOCKS (Blue) - Data sources
   // ============================================================================
   {
-    type: 'data-input',
+    type: 'data-source',
     label: 'Data Source',
     icon: '📊',
     category: 'input',
@@ -193,7 +193,7 @@ export const EXAMPLE_WORKFLOWS = [
     name: 'Simple Collaborative Filtering',
     description: 'Basic user-based recommendation system',
     blocks: [
-      'data-input',
+      'data-source',
       'split',
       'collaborative-filtering',
       'predictions',
@@ -204,7 +204,7 @@ export const EXAMPLE_WORKFLOWS = [
     name: 'XGBoost with Features',
     description: 'Gradient boosting with user/item features',
     blocks: [
-      'data-input',
+      'data-source',
       'features-input',
       'split',
       'preprocessor',
@@ -217,7 +217,7 @@ export const EXAMPLE_WORKFLOWS = [
     name: 'Matrix Factorization Pipeline',
     description: 'SVD-based collaborative filtering',
     blocks: [
-      'data-input',
+      'data-source',
       'split',
       'matrix-factorization',
       'predictions',
@@ -228,7 +228,7 @@ export const EXAMPLE_WORKFLOWS = [
     name: 'Deep Learning Pipeline',
     description: 'Neural network with metadata features',
     blocks: [
-      'data-input',
+      'data-source',
       'features-input',
       'split',
       'preprocessor',
@@ -241,7 +241,7 @@ export const EXAMPLE_WORKFLOWS = [
     name: 'Model Comparison',
     description: 'Compare multiple models on same data',
     blocks: [
-      'data-input',
+      'data-source',
       'split',
       'xgboost',
       'random-forest',
@@ -265,8 +265,8 @@ export function isValidConnection(
   if (!fromComponent) return false
 
   // Check if the destination accepts the output type of the source
-  return toComponent.accepts.includes(fromComponent.produces) ||
-         toComponent.accepts.length === 0  // Empty accepts means it can be a starting point
+  // Empty accepts array means the component doesn't accept any inputs (it's a source)
+  return toComponent.accepts.includes(fromComponent.produces)
 }
 
 /**
