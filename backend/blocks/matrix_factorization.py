@@ -28,7 +28,12 @@ class MatrixFactorizationBlock(BaseBlock):
     def execute(self, inputs: Dict[str, Any]) -> BlockOutput:
         self.status = BlockStatus.RUNNING
         try:
-            train_data = inputs.get('split-data', {}).get('train') or inputs.get('processed-data')
+            split_data = inputs.get('split-data', {})
+            if split_data and 'train' in split_data:
+                train_data = split_data['train']
+            else:
+                train_data = inputs.get('processed-data')
+
             if train_data is None:
                 raise ValueError("Missing training data")
 
