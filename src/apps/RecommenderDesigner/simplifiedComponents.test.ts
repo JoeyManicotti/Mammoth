@@ -192,8 +192,8 @@ describe('SimplifiedComponents', () => {
   })
 
   describe('Example Workflows', () => {
-    it('should have 5 example workflows', () => {
-      expect(EXAMPLE_WORKFLOWS).toHaveLength(5)
+    it('should have 7 example workflows', () => {
+      expect(EXAMPLE_WORKFLOWS).toHaveLength(7)
     })
 
     it('all workflows should have valid component types', () => {

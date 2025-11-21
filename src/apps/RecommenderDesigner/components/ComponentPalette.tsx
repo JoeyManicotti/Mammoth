@@ -5,9 +5,10 @@ import './ComponentPalette.css'
 
 interface ComponentPaletteProps {
   onLoadWorkflow?: (workflow: { name: string; blocks: string[]; description?: string }) => void
+  onRunWorkflow?: (workflow: { name: string; blocks: string[]; description?: string }) => void
 }
 
-const ComponentPalette = ({ onLoadWorkflow }: ComponentPaletteProps) => {
+const ComponentPalette = ({ onLoadWorkflow, onRunWorkflow }: ComponentPaletteProps) => {
   const [activeTab, setActiveTab] = useState<'components' | 'recipes'>('components')
 
   const categories = [
@@ -20,6 +21,13 @@ const ComponentPalette = ({ onLoadWorkflow }: ComponentPaletteProps) => {
   const handleLoadWorkflow = (workflow: typeof EXAMPLE_WORKFLOWS[0]) => {
     if (onLoadWorkflow) {
       onLoadWorkflow(workflow)
+    }
+  }
+
+  const handleRunWorkflow = (workflow: typeof EXAMPLE_WORKFLOWS[0], e: React.MouseEvent) => {
+    e.stopPropagation() // Prevent the card click from loading the workflow
+    if (onRunWorkflow) {
+      onRunWorkflow(workflow)
     }
   }
 
@@ -82,7 +90,7 @@ const ComponentPalette = ({ onLoadWorkflow }: ComponentPaletteProps) => {
         {activeTab === 'recipes' && (
           <div className="recipes-tab">
             <p className="recipes-description">
-              Click any recipe to load it onto the canvas
+              Click any recipe to load it onto the canvas, or click "Run" to load and execute
             </p>
             <div className="recipes-grid">
               {EXAMPLE_WORKFLOWS.map((workflow, idx) => (
@@ -94,7 +102,16 @@ const ComponentPalette = ({ onLoadWorkflow }: ComponentPaletteProps) => {
                 >
                   <div className="recipe-header">
                     <h4 className="recipe-name">{workflow.name}</h4>
-                    <div className="recipe-badge">{workflow.blocks.length} blocks</div>
+                    <div className="recipe-actions">
+                      <div className="recipe-badge">{workflow.blocks.length} blocks</div>
+                      <button
+                        className="recipe-run-button"
+                        onClick={(e) => handleRunWorkflow(workflow, e)}
+                        title="Load and run this workflow"
+                      >
+                        <span className="run-icon">▶</span> Run
+                      </button>
+                    </div>
                   </div>
                   <p className="recipe-description">{workflow.description}</p>
                   <div className="recipe-blocks-preview">

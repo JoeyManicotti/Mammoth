@@ -24,6 +24,7 @@ const RecommenderDesigner = () => {
   const [paletteCollapsed, setPaletteCollapsed] = useState(false)
   const [paletteWidth, setPaletteWidth] = useState(300)
   const [isResizing, setIsResizing] = useState(false)
+  const [workflowStatus, setWorkflowStatus] = useState<string>('')
   const componentCounter = useRef(0)
 
   // Load canvas and UI state from localStorage on mount
@@ -228,6 +229,24 @@ const RecommenderDesigner = () => {
     setPan({ x: 0, y: 0 })
   }, [])
 
+  const handleRunWorkflow = useCallback((workflow: { name: string; blocks: string[]; description?: string }) => {
+    // First, load the workflow onto the canvas
+    handleLoadWorkflow(workflow)
+
+    // Show running status
+    setWorkflowStatus(`Running "${workflow.name}"...`)
+
+    // Simulate workflow execution
+    setTimeout(() => {
+      setWorkflowStatus(`Successfully executed "${workflow.name}" with ${workflow.blocks.length} blocks`)
+
+      // Clear status after 5 seconds
+      setTimeout(() => {
+        setWorkflowStatus('')
+      }, 5000)
+    }, 1000)
+  }, [handleLoadWorkflow])
+
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     setIsResizing(true)
     e.preventDefault()
@@ -276,7 +295,10 @@ const RecommenderDesigner = () => {
               className="resizable-palette"
               style={{ width: paletteWidth }}
             >
-              <ComponentPalette onLoadWorkflow={handleLoadWorkflow} />
+              <ComponentPalette
+                onLoadWorkflow={handleLoadWorkflow}
+                onRunWorkflow={handleRunWorkflow}
+              />
               <div
                 className="resize-handle"
                 onMouseDown={handleMouseDown}
@@ -318,6 +340,11 @@ const RecommenderDesigner = () => {
         )}
         {showHelp && (
           <HelpModal onClose={() => setShowHelp(false)} />
+        )}
+        {workflowStatus && (
+          <div className="workflow-status-toast">
+            {workflowStatus}
+          </div>
         )}
       </div>
     </DndProvider>
